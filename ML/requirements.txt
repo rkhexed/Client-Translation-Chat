@@ -1,1 +1,8 @@
-flask
+fastapi
+uvicorn
+transformers
+optional - joblib, scikit - learn
+protobuf
+tiktoken
+python 3.12
+PyTorch
