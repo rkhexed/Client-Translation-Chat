@@ -1,0 +1,34 @@
+
+.home_container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.home_container>* {
+    margin-bottom: 10px;
+}
+
+.home_header {
+    margin-bottom: 30px;
+}
+
+.username_input {
+    padding: 10px;
+    width: 50%;
+}
+
+.home_cta {
+    width: 200px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #607eaa;
+    color: #f9f5eb;
+    outline: none;
+    border: none;
+    border-radius: 5px;
+}
