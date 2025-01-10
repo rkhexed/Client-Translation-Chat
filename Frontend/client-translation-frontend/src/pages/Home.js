@@ -5,6 +5,8 @@ import styles from './styles/home.module.css'
 const Home = ({socket}) => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('');
+  const [prefLang, setPrefLang] = useState('');
+  const [languages, setLanguages] = useState(["Choose your language","English", "or", "Spanish"]);
   
 
   const handleSubmit = (e) => {
@@ -12,7 +14,7 @@ const Home = ({socket}) => {
     localStorage.setItem('userName', userName);
 
     //sends the username and socket ID to the Node.js server
-    socket.emit('newUser', { userName, socketID: socket.id });
+    socket.emit('newUser', { userName, socketID: socket.id, preferredLang: prefLang });
 
     navigate('/chat');
   };
@@ -29,7 +31,17 @@ const Home = ({socket}) => {
         value={userName}
         onChange={(e) => setUserName(e.target.value)}
       />
-      <button className={styles.home_cta}>SIGN IN</button>
+      <div className={styles.home_bottom}>
+        <select className={styles.lang_dropdown}>
+
+          {languages.map((language, index) => 
+            <option key = {index} value = {language}>{language}</option>
+          )}
+          
+        </select>
+        <button className={styles.home_cta}>SIGN IN</button>
+      </div>
+      
     </form>
   );
 };

@@ -32,3 +32,25 @@
     border: none;
     border-radius: 5px;
 }
+
+.home_bottom {
+    display: flex;
+    justify-content: space-around;
+    width: 50%;
+}
+
+.lang_dropdown{
+    padding: 10px;
+    padding-right: 0px;
+    width: 33%;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    background-color: #f9f5eb;
+    color: #333;
+    appearance:unset;
+    background: url(http://cdn1.iconfinder.com/data/icons/cc_mono_icon_set/blacks/16x16/br_down.png) no-repeat right #ddd ;
+    text-align: center;
+    background-position: calc(100% - 10px) center;
+}

@@ -17,8 +17,13 @@ const ChatFooter = ({ socket }) => {
         id: `${socket.id}${Math.random()}`,
         socketID: socket.id,
       });
+      // THIS IS FOR API TESTING
+      console.log('meow')
+      fetch('http://localhost:4000/api')
+        .then((res) => res.json())
+        .then(({message}) => console.log(message))
     }
-    setMessage('');
+    setMessage('a');
   };
 
 
