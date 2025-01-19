@@ -24,6 +24,7 @@ const PORT = process.env.PORT || 4000;
 const TRANSLATION_API_URL = process.env.TRANSLATION_API_URL || "http://127.0.0.1:8000/translate/";
 
 // In-memory storage for users (for simplicity; replace with DB in production)
+// Create dictionary with userID and pref lang for that User
 let users = [];
 
 // Function to call the FastAPI translation service
@@ -65,6 +66,7 @@ io.on("connection", (socket) => {
             // Translate the message to the recipient's preferred language
             const translatedMessage = await translateText(
               data.message,
+              // Create edge case where if sender and recipient lang are same no need to call the API
               sender.preferredLang, // Sender's language as source
               recipient.preferredLang // Recipient's language as target
             );
