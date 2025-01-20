@@ -15,7 +15,7 @@ const Home = ({socket}) => {
     //console.log("username:", userName);
 
     //sends the username and socket ID to the Node.js server
-    socket.emit('newUser', { username, socketID: socket.id, preferredLang: prefLang });
+    socket.emit('newUser', { username: username, socketID: socket.id, preferredLang: prefLang });
 
     navigate('/chat');
   };
