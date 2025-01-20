@@ -8,6 +8,7 @@ const ChatBar = ({ socket }) => {
 
   useEffect(() => {
     socket.on('newUserResponse', (data) => setUsers(data));
+    
   }, [socket, users]);
 
   return (
@@ -16,8 +17,8 @@ const ChatBar = ({ socket }) => {
       <div>
         <h4 className={styles.chat_header}>ACTIVE USERS</h4>
         <div className={styles.chat_users}>
-          {users.map((user) => (
-            <p key={user.socketID}>{user.userName}</p>
+          {users.map((users) => (
+            <p key={users.socketID}>{users.username}</p>
           ))}
         </div>
       </div>

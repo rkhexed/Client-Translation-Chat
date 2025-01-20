@@ -4,17 +4,18 @@ import styles from './styles/home.module.css'
 
 const Home = ({socket}) => {
   const navigate = useNavigate();
-  const [userName, setUserName] = useState('');
+  const [username, setUserName] = useState('');
   const [prefLang, setPrefLang] = useState('');
   const [languages, setLanguages] = useState(["Choose your language","English", "or", "Spanish"]);
   
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    localStorage.setItem('userName', userName);
+    localStorage.setItem('userName', username);
+    //console.log("username:", userName);
 
     //sends the username and socket ID to the Node.js server
-    socket.emit('newUser', { userName, socketID: socket.id, preferredLang: prefLang });
+    socket.emit('newUser', { username, socketID: socket.id, preferredLang: prefLang });
 
     navigate('/chat');
   };
@@ -28,7 +29,7 @@ const Home = ({socket}) => {
         name="username"
         id="username"
         className={styles.username_input}
-        value={userName}
+        value={username}
         onChange={(e) => setUserName(e.target.value)}
       />
       <div className={styles.home_bottom}>

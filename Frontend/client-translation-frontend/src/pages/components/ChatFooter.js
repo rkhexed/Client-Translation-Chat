@@ -9,21 +9,17 @@ const ChatFooter = ({ socket }) => {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
+
     if (message.trim() && localStorage.getItem('userName')) {
-      // socket req
       socket.emit('message', {
         text: message,
         name: localStorage.getItem('userName'),
         id: `${socket.id}${Math.random()}`,
         socketID: socket.id,
       });
-      // THIS IS FOR API TESTING
-      console.log('meow')
-      fetch('http://localhost:4000/api')
-        .then((res) => res.json())
-        .then(({message}) => console.log(message))
+
     }
-    setMessage('a');
+    setMessage('');
   };
 
 
