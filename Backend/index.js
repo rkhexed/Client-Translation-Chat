@@ -1,3 +1,4 @@
+
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -10,14 +11,22 @@ const socketIO = require('socket.io')(http, {
 });
 const axios = require('axios');
 
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next();
+});
+
+
 // Language configuration with mBART codes
 const supportedLanguages = {
     "English": "en_XX",
     "Spanish": "es_XX",
     "French": "fr_XX",
-    "German": "de_XX",
-    "Italian": "it_XX",
-    "Portuguese": "pt_XX",
+    "German": "de_DE",
+    "Italian": "it_IT",
     "Russian": "ru_RU",
     "Chinese": "zh_CN",
     "Japanese": "ja_XX",
