@@ -1,105 +1,161 @@
-// Required modules
 const express = require("express");
-const http = require("http");
-const socketIO = require("socket.io");
-const cors = require("cors");
-const axios = require("axios");
-require("dotenv").config(); // Load environment variables
-
-// Initialize Express app and server
 const app = express();
-const server = http.createServer(app);
-const io = socketIO(server, {
-  cors: {
-    origin: "http://localhost:3000", // Frontend origin
-  },
+const cors = require("cors");
+const http = require('http').Server(app);
+const PORT = 4000;
+const socketIO = require('socket.io')(http, {
+    cors: {
+        origin: "http://localhost:3000"
+    }
 });
+const axios = require('axios');
 
-// Middleware
-app.use(cors());
-app.use(express.json()); // Parse JSON request bodies
+// Language configuration with mBART codes
+const supportedLanguages = {
+    "English": "en_XX",
+    "Spanish": "es_XX",
+    "French": "fr_XX",
+    "German": "de_XX",
+    "Italian": "it_XX",
+    "Portuguese": "pt_XX",
+    "Russian": "ru_RU",
+    "Chinese": "zh_CN",
+    "Japanese": "ja_XX",
+    "Korean": "ko_KR"
+};
 
-// Environment variables
-const PORT = process.env.PORT || 4000;
-const TRANSLATION_API_URL = process.env.TRANSLATION_API_URL || "http://127.0.0.1:8000/translate/";
+// Store connected users with their language preferences
+let users = new Map();
 
-// In-memory storage for users (for simplicity; replace with DB in production)
-// Create dictionary with userID and pref lang for that User
-let users = [];
-
-// Function to call the FastAPI translation service
-async function translateText(text, sourceLang, targetLang) {
-  try {
-    const response = await axios.post(TRANSLATION_API_URL, {
-      text: text,
-      source_lang: sourceLang,
-      target_lang: targetLang,
-    });
-    return response.data.translated_text;
-  } catch (error) {
-    console.error("Error translating text:", error.message);
-    throw new Error("Translation service failed.");
-  }
+// Translation function
+async function translateMessage(text, sourceLang, targetLang) {
+    try {
+        const response = await axios.post('http://127.0.0.1:8000/translate/', {
+            text: text,
+            source_lang: sourceLang,
+            target_lang: targetLang
+        });
+        
+        if (response.data && response.data.translated_text) {
+            return response.data.translated_text;
+        } else {
+            throw new Error('Translation response format invalid');
+        }
+    } catch (error) {
+        console.error('Translation error:', error.message);
+        throw error;
+    }
 }
 
-// WebSocket events
-io.on("connection", (socket) => {
-  console.log(`⚡: ${socket.id} user just connected!`);
+// Socket connection handling
+socketIO.on('connection', (socket) => {
+    console.log(`⚡: ${socket.id} user just connected!`);
 
-  // Handle new user connection
-  socket.on("newUser", (data) => {
-    users.push({
-      username: data.username,
-      socketID: socket.id,
-      preferredLang: data.preferredLang, // Store user's preferred language
-    });
-    io.emit("newUserResponse", users);
-  });
+    // Handle new messages
+    socket.on("message", async (data) => {
+        const sender = users.get(socket.id);
+        if (!sender) return;
 
-  // Handle message event
-  socket.on("message", async (data) => {
-    const sender = users.find((user) => user.socketID === socket.id);
-    if (sender) {
-      for (const recipient of users) {
-        if (recipient.socketID !== sender.socketID) {
-          try {
-            // Translate the message to the recipient's preferred language
-            const translatedMessage = await translateText(
-              data.message,
-              // Create edge case where if sender and recipient lang are same no need to call the API
-              sender.preferredLang, // Sender's language as source
-              recipient.preferredLang // Recipient's language as target
-            );
+        const messageToSend = {
+            text: data.message,
+            name: data.username,
+            id: `${socket.id}-${Date.now()}`
+        };
 
-            // Send the original and translated message to the recipient
-            io.to(recipient.socketID).emit("messageResponse", {
-              from: sender.username,
-              originalMessage: data.message,
-              translatedMessage: translatedMessage,
-            });
-          } catch (err) {
-            console.error("Translation failed:", err.message);
-          }
+        // Send original message to sender
+        socket.emit("messageResponse", messageToSend);
+
+        // Translate and send messages to other users
+        for (const [recipientId, recipient] of users) {
+            if (recipientId !== socket.id) {
+                try {
+                    if (recipient.preferredLang !== sender.preferredLang) {
+                        console.log(`Translating from ${sender.preferredLang} to ${recipient.preferredLang}`);
+                        
+                        const translatedText = await translateMessage(
+                            data.message,
+                            sender.preferredLang,
+                            recipient.preferredLang
+                        );
+
+                        const translatedMessage = {
+                            text: translatedText,
+                            name: data.username,
+                            id: `${messageToSend.id}-tr-${recipientId}`,
+                            isTranslated: true,
+                            originalLanguage: sender.preferredLang,
+                            translatedLanguage: recipient.preferredLang
+                        };
+
+                        socket.to(recipientId).emit("messageResponse", translatedMessage);
+                    } else {
+                        socket.to(recipientId).emit("messageResponse", messageToSend);
+                    }
+                } catch (err) {
+                    console.error("Translation failed:", err);
+                    // Fall back to original message if translation fails
+                    socket.to(recipientId).emit("messageResponse", {
+                        ...messageToSend,
+                        translationError: true
+                    });
+                }
+            }
         }
-      }
+    });
+
+    // Handle new user joining
+    socket.on("newUser", data => {
+        const userInfo = {
+            username: data.username,
+            socketID: socket.id,
+            preferredLang: supportedLanguages[data.preferredLang] || "en_XX"
+        };
+        users.set(socket.id, userInfo);
+        socketIO.emit("newUserResponse", Array.from(users.values()));
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+        console.log('🔥: A user disconnected');
+        users.delete(socket.id);
+        socketIO.emit("newUserResponse", Array.from(users.values()));
+    });
+});
+
+// API endpoint to get supported languages
+app.get('/api/languages', (req, res) => {
+    const languages = Object.entries(supportedLanguages).map(([name, code]) => ({
+        name,
+        code,
+        nativeName: name
+    }));
+    res.json(languages);
+});
+
+// API endpoint to test translation
+app.post('/api/test-translation', async (req, res) => {
+    try {
+        const { text, sourceLang, targetLang } = req.body;
+        const translated = await translateMessage(text, sourceLang, targetLang);
+        res.json({ success: true, translated_text: translated });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
-  });
-
-  // Handle user disconnection
-  socket.on("disconnect", () => {
-    console.log(`🔥: ${socket.id} user disconnected.`);
-    users = users.filter((user) => user.socketID !== socket.id);
-    io.emit("newUserResponse", users);
-  });
 });
 
-// REST API endpoints
-app.get("/api", (req, res) => {
-  res.json({ message: "Hello from the backend!" });
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        success: false,
+        error: 'Internal server error'
+    });
 });
 
-// Start the server
-server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+// Start server
+http.listen(PORT, () => {
+    console.log(`Server listening on ${PORT}`);
 });
-
