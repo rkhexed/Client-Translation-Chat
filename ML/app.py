@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from transformers import MBartForConditionalGeneration, MBartTokenizer
 import uvicorn
+import asyncio
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -21,7 +22,7 @@ class TranslationRequest(BaseModel):
     target_lang: str  # Language code for target text
 
 # Utility function to translate text
-def translate_text(text: str, src_lang: str, tgt_lang: str):
+async def translate_text(text: str, src_lang: str, tgt_lang: str):
     try:
         tokenizer.src_lang = src_lang
         inputs = tokenizer(text, return_tensors="pt")
@@ -36,7 +37,7 @@ def translate_text(text: str, src_lang: str, tgt_lang: str):
 
 # POST method for translation
 @app.post("/translate/")
-def translate(request: TranslationRequest):
+async def translate(request: TranslationRequest):
     translation = translate_text(request.text, request.source_lang, request.target_lang)
     return {"translated_text": translation}
 
