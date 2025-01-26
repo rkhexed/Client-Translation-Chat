@@ -38,7 +38,7 @@ async def translate_text(text: str, src_lang: str, tgt_lang: str):
 # POST method for translation
 @app.post("/translate/")
 async def translate(request: TranslationRequest):
-    translation = translate_text(request.text, request.source_lang, request.target_lang)
+    translation = await translate_text(request.text, request.source_lang, request.target_lang)
     return {"translated_text": translation}
 
 # To get FastAPI server running
