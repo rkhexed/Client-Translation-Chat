@@ -5,4 +5,10 @@ optional - joblib, scikit - learn
 protobuf
 tiktoken
 torch
+<<<<<<< HEAD
 SentencePiece
+=======
+SentencePiece
+redis
+asyncio
+>>>>>>> ML-optimization

@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from transformers import MBartForConditionalGeneration, MBartTokenizer
 import uvicorn
+import asyncio
+import redis
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -14,6 +16,9 @@ model = MBartForConditionalGeneration.from_pretrained(model_name)
 # Set the model to evaluation mode
 model.eval()
 
+# Initialize Redis client
+redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
+
 # Data validation using Pydantic
 class TranslationRequest(BaseModel):
     text: str
@@ -21,7 +26,7 @@ class TranslationRequest(BaseModel):
     target_lang: str  # Language code for target text
 
 # Utility function to translate text
-def translate_text(text: str, src_lang: str, tgt_lang: str):
+async def translate_text(text: str, src_lang: str, tgt_lang: str):
     try:
         tokenizer.src_lang = src_lang
         inputs = tokenizer(text, return_tensors="pt")
@@ -36,8 +41,17 @@ def translate_text(text: str, src_lang: str, tgt_lang: str):
 
 # POST method for translation
 @app.post("/translate/")
-def translate(request: TranslationRequest):
-    translation = translate_text(request.text, request.source_lang, request.target_lang)
+async def translate(request: TranslationRequest):
+    # Create a cache key based on input text, source, and target languages
+    cache_key = f"{request.source_lang}:{request.target_lang}:{request.text}"
+    # Check if the translation exists in the cache
+    cached_translation = redis_client.get(cache_key)
+    if cached_translation:
+        return {"translated_text": cached_translation}
+    # If not in cache, perform translation
+    translation = await translate_text(request.text, request.source_lang, request.target_lang)
+    # Store the translation in Redis cache
+    redis_client.set(cache_key, translation, ex=3600)  # Cache for 1 hour
     return {"translated_text": translation}
 
 # To get FastAPI server running
