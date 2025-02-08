@@ -11,6 +11,29 @@ const ChatPage = ({ socket }) => {
   const lastMessageRef = useRef(null);
 
 
+  useEffect(() => {
+    async function fetchData(){
+      try{
+        const response = await fetch('http://localhost:4000/api/load-messages');
+        const data = await response.json();
+          
+        if (response.ok) {
+          //console.log(data.data)
+          setMessages([...messages, ...data.data])
+        } else {
+          console.log('error setting messages');
+        }
+      } catch (e){
+        console.error(e);
+      }
+
+    }
+    fetchData();
+    
+
+    
+  }, []);
+
   useEffect(() => { // get message
     socket.on('messageResponse', (data) => setMessages([...messages, data]));
   }, [socket, messages]);

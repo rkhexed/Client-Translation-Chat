@@ -1,0 +1,56 @@
+
+.SignUp_container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.SignUp_container>* {
+    margin-bottom: 10px;
+}
+
+.home_header {
+    margin-bottom: 30px;
+}
+
+.username_input {
+    padding: 10px;
+    width: 50%;
+}
+
+.SignUp_cta {
+    width: 200px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #607eaa;
+    color: #f9f5eb;
+    outline: none;
+    border: none;
+    border-radius: 5px;
+}
+
+.home_bottom {
+    display: flex;
+    justify-content: space-around;
+    width: 50%;
+}
+
+.lang_dropdown{
+    padding: 10px;
+    padding-right: 0px;
+    width: 33%;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    background-color: #f9f5eb;
+    color: #333;
+    appearance:unset;
+    background: url(http://cdn1.iconfinder.com/data/icons/cc_mono_icon_set/blacks/16x16/br_down.png) no-repeat right #ddd ;
+    text-align: center;
+    background-position: calc(100% - 10px) center;
+}

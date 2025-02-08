@@ -7,9 +7,12 @@ const ChatBar = ({ socket }) => {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
+   // const timeoutId = setTimeout(() => {
+    //}, 1000);
+
     socket.on('newUserResponse', (data) => setUsers(data));
     
-  }, [socket, users]);
+  }, [socket]);
 
   return (
     <div className={styles.chat_sidebar}>

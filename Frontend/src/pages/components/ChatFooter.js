@@ -10,6 +10,8 @@ const ChatFooter = ({ socket }) => {
   const handleSendMessage = (e) => {
     e.preventDefault();
 
+    //console.log(localStorage.getItem('userName'));
+
     if (message.trim() && localStorage.getItem('userName')) {
       socket.emit('message', {
         message: message,

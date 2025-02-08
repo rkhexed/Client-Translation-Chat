@@ -10,6 +10,36 @@ const socketIO = require('socket.io')(http, {
     }
 });
 const axios = require('axios');
+const bcrypt = require('bcrypt');
+
+require('dotenv').config();
+
+// mongodb stuff
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = process.env.DATABASE_URL;
+
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
+
+async function connectDB() {
+  try {
+    await client.connect();
+    console.log('Connected to MongoDB');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+  }
+}
+// connect to mongodb
+connectDB();
+
+
+app.use(express.json());
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
@@ -70,6 +100,14 @@ socketIO.on('connection', (socket) => {
             name: data.username,
             id: `${socket.id}-${Date.now()}`
         };
+        try{
+            collection = await connectDB('chatlog');
+            collection.insertOne(messageToSend);
+        } catch (e){
+             return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+        
+
 
         // Send original message to sender
         socket.emit("messageResponse", messageToSend);
@@ -141,6 +179,19 @@ app.get('/api/languages', (req, res) => {
     res.json(languages);
 });
 
+app.get('/api/load-messages', async (req, res) => {
+    try{
+        collection = await connectDB('chatlog');
+        entries = await collection.find({}).toArray()
+
+       //console.log(entries);
+        return res.status(200).json({success: true, data: entries})
+        
+    } catch (e){
+         return res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
 // API endpoint to test translation
 app.post('/api/test-translation', async (req, res) => {
     try {
@@ -155,6 +206,73 @@ app.post('/api/test-translation', async (req, res) => {
     }
 });
 
+//API endpoint to allow user to sign up
+app.post('/api/signup', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ success: false, error: 'Username and password are required' });
+
+    try {
+        //connect to login collection
+        collection = await connectDB('login');
+        userExists = await collection.findOne({username:username});
+
+        if (userExists) {
+            //console.log("dies, (they already exist)");
+            res.status(500).json({
+                success: false,
+                error: 'Username already exists'
+            })
+            return
+        }
+        const salt = await bcrypt.genSalt(10)
+        const hashedPassword = await bcrypt.hash(password, salt );
+
+        await collection.insertOne({username: username, password: hashedPassword});
+       
+        return res.json({success: true})
+
+    } catch(e){
+        console.error(e);
+        return res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+    
+
+})
+
+//api to allow login
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ success: false, error: 'Username and password are required' });
+
+    try {
+        //connect to login collection
+        collection = await connectDB('login');
+        user = await collection.findOne({username:username});
+
+        if (!user) {
+            return res.status(400).json({success: false, error: 'User does not exist'})
+        }
+
+        match = bcrypt.compare(password, user.password);
+
+        if(!match){
+             return res.status(400).json({ success: false, error: 'Password is incorrect' });
+        }
+        // SUCCESS
+        return res.json({success: true, token: username}) // CHANGE TO JWT TOKEN FOR SAFETY!!!!
+
+    } catch(e){
+        console.error(e);
+        return res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+    
+
+})
+
+
+
+
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -168,3 +286,18 @@ app.use((err, req, res, next) => {
 http.listen(PORT, () => {
     console.log(`Server listening on ${PORT}`);
 });
+
+
+
+
+
+
+async function connectDB(collection, db='logins') {
+    try {
+        collection = client.db(db).collection(collection); 
+        return collection;
+    } catch (error) {
+        console.error('MongoDB connection error:', error);
+    }
+
+}

@@ -5,6 +5,7 @@ import styles from './styles/home.module.css';
 const Home = ({ socket }) => {
     const navigate = useNavigate();
     const [username, setUserName] = useState('');
+    const [password, setPassword] = useState('');
     const [prefLang, setPrefLang] = useState('');
     const [languages, setLanguages] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -23,24 +24,45 @@ const Home = ({ socket }) => {
             });
     }, []);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!username.trim() || !prefLang) {
-            alert('Please enter a username and select a language');
+            alert('Please fill out all fields!');
             return;
         }
 
-        localStorage.setItem('userName', username);
-        localStorage.setItem('preferredLanguage', prefLang);
+        try {
+            const response = await fetch('http://localhost:4000/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ username: username.trim(), password:password.trim()})
+            });
 
-        // Send user info to server
-        socket.emit('newUser', {
-            username: username,
-            socketID: socket.id,
-            preferredLang: prefLang
-        });
+            const data = await response.json();
+        
+            if (response.ok) {
+                // login
+                localStorage.setItem('userName', data.token);
+                localStorage.setItem('preferredLanguage', prefLang);
 
-        navigate('/chat');
+                // Send user info to server
+                socket.emit('newUser', {
+                    username: username,
+                    socketID: socket.id,
+                    preferredLang: prefLang
+                });
+
+                navigate('/chat');
+
+            } else {
+                alert(data.error)
+            }
+
+        }catch (e){
+            console.error(e);
+        }
+
+        
     };
 
     if (loading) {
@@ -63,6 +85,18 @@ const Home = ({ socket }) => {
                 required
             />
 
+            <label htmlFor="password">Password</label>
+            <input
+                type="password"
+                minLength={5}
+                name="password"
+                id="password"
+                className={styles.username_input}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+            />
+
             <label htmlFor="language">Preferred Language</label>
             <select
                 id="language"
@@ -82,6 +116,8 @@ const Home = ({ socket }) => {
             <button type="submit" className={styles.home_cta}>
                 SIGN IN
             </button>
+
+            <a href="/SignUp">Sign up</a>
         </form>
     );
 };
